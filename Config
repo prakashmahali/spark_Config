@@ -1,0 +1,36 @@
+Spark job Properties : 
+
+spark-submit --master yarn --deploy-mode cluster \
+    --conf spark.yarn.maxAppAttempts=4 \
+    --conf spark.yarn.am.attemptFailuresValidityInterval=1h \
+    --conf spark.yarn.max.executor.failures={8 * num_executors} \
+    --conf spark.yarn.executor.failuresValidityInterval=1h
+	
+>>Another important setting is a maximum number of executor failures before the application fails. 
+	--conf spark.yarn.max.executor.failures={8 * num_executors}
+>>If the application runs for days or weeks without restart or redeployment on highly utilized cluster, 
+4 attempts could be exhausted in few hours. To avoid this situation, the attempt counter should be reset on every hour of so
+	--conf spark.yarn.am.attemptFailuresValidityInterval=1h
+>>For long-running jobs you could also consider to boost maximum number of task failures before giving up the job. 
+By default tasks will be retried 4 times and then job fails.
+	 --conf spark.task.maxFailures=8
+>> Spark Streaming job .
+	When a Spark Streaming application is submitted to the cluster, YARN queue where the job runs must be defined. 
+	I strongly recommend using YARN Capacity Scheduler and submitting long-running jobs to separate queue.
+	--queue realtime_queue
+>>Unfortunately speculative mode can be enabled only if Spark actions are idempotent.
+	 --conf spark.speculation=true
+>>When ticket expires Spark Streaming job is not able to write or read data from HDFS anymore.
+	--principal user/hostname@domain \
+     --keytab /path/to/foo.keytab
+>> HDFS cache must be disabled. If not, Spark will not be able to read updated token from file on HDFS.
+	 --conf spark.hadoop.fs.hdfs.impl.disable.cache=true
+>>Log4j Configuration 
+	--conf spark.driver.extraJavaOptions=-Dlog4j.configuration=file:log4j.properties \
+     --conf spark.executor.extraJavaOptions=-Dlog4j.configuration=file:log4j.properties \
+     --files /path/to/log4j.properties
+YARN application id
+YARN container hostname
+Executor id (Spark driver is always 000001, Spark executors start from 000002)
+YARN attempt (to check how many times Spark driver has been restarted)
+	 
